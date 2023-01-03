@@ -5,8 +5,11 @@ info:
 servers:
   - url: http://example.com
 paths:
-  /core/resolveAccess:
+  /core/policy/resolveAccess:
+    summary:  api returns weather the user has access to given resource or not 
     get:
+      tags:
+        - "policy-apis"
       parameters:
         - in: header  
           name: security
@@ -16,19 +19,23 @@ paths:
         - in: header
           name: arc-account-id
           schema:
-             type: string     
+             type: string    
+          required: true    
         - in: query
           name: serviceId
           schema:
             type: string
+          required: true  
         - in: query
           name: resourceId
           schema:
             type: string
+          required: true  
         - in: query
           name: accountName
           schema:
             type: string
+          required: true  
       responses:
         '200':
            description: OK
@@ -40,39 +47,244 @@ paths:
            description: resource not found    
         '400':
            description: bad request
-  /core/getPolicy:        
-        get: 
-          parameters:
-            - in: header 
-              name: security
+  /core/policy/getPolicy:
+    summary: get the polciy with given policy id
+    get:
+      tags:
+        - "policy-apis"
+      parameters:
+        - in: header
+          name: security
+          schema:
+            type: string
+          required: true
+        - in: header
+          name: arc-account-id
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: policyId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
               schema:
-                type: string
-              required: true
-            - in: header
-              name: arc-account-id
-              schema:
-                type: string    
-              required: true
-            - in: query 
-              name: policyId
-              schema:
-                type: string 
-              required: true  
-          responses:
-            '200':
-              description: OK
-              content:
+                $ref:  '#/components/schemas/PolicyDocuments'
+        '403':
+          description: access denied
+        '404':
+          description: resource not found , passed policy id does not exist.
+        '400':
+          description: bad request
+  /core/policy/createOrReplacePolicy:
+    summary: create or replace the polciy passed in payload document
+    put:
+      tags:
+        - "policy-apis"
+      parameters:
+        - in: header
+          name: security
+          schema:
+            type: string
+          required: true
+        - in: header
+          name: arc-account-id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        content:
+          'application/json':
+            schema:
+              $ref:  '#/components/schemas/PolicyDocuments'
+      responses:
+          '200':
+            description: ok
+          '201':
+            description: new polciy document created
+            content:
+              application/json:
+                schema:
+                  properties:
+                    policyId:
+                      type: string
+          '403':
+            description: access denied
+          '400':
+            description: bad request
+  /core/policy/addPolicyRules:
+    summary: add a rule to a policy identigied by policy id
+    post:
+      tags:
+        - "policy-apis"
+      parameters:
+        - in: header
+          name: security
+          schema:
+            type: string
+          required: true
+        - in: header
+          name: arc-account-id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        content:
+          'application/json':
+            schema:
+              properties:
+                policyId:
+                  type: string
+                rules:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SimpleRule'
+      responses:
+        '200':
+          description: ok
+        '403':
+          description: access denied
+        '400':
+          description: bad request  
+
+  /core/service/getService:
+      summary: api returns service specified by its name in a given account.
+      get:
+        tags:
+          - "service-apis"
+        parameters:
+          - in: header
+            name: security
+            schema:
+              type: string
+            required: true
+          - in: header
+            name: arc-account-id
+            schema:
+              type: string
+            required: true
+          - in: query
+            name: serviceName
+            schema:
+              type: string
+            required: true  
+        responses:
+          '200':
+            description: OK
+            content:
                 application/json:
                   schema:
-                    $ref:  '#/components/schemas/PolicyDocuments'
-                
-            '403':
-              description: access denied
-            '404': 
-              description: resource not found , passed policy id does not exist.    
-            '400':
-              description: bad request          
-  #/core/addPolicyRule:
+                    $ref:  '#/components/schemas/Service'
+          '403':
+            description: access denied
+          '404':
+            description: resource not found , passed policy id does not exist.
+          '400':
+            description: bad request
+
+  /core/service/getAllService:
+    summary: api returns all the service associated with the a account id.
+    get:
+      tags:
+        - "service-apis"
+      parameters:
+          - in: header
+            name: security
+            schema:
+              type: string
+            required: true
+          - in: header
+            name: arc-account-id
+            schema:
+              type: string
+            required: true
+      responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Service'
+          '403':
+            description: access denied
+          '404':
+            description: resource not found 
+          '400':
+            description: bad request
+
+
+  /core/service/createOrReplaceService:
+    summary: api to create or replace a service definition  
+    put: 
+      tags:
+        - "service-apis"
+      parameters:
+          - in: header
+            name: security
+            schema:
+              type: string
+            required: true
+          - in: header
+            name: arc-account-id
+            schema:
+              type: string
+            required: true
+      requestBody:
+        content:
+          'application/json':
+            schema:
+              $ref:  '#/components/schemas/Service'
+      responses:
+        '200':
+          description: ok
+        '201':
+          description: new service created
+        '403':
+          description: access denied
+        '400':
+          description: bad request
+
+  /core/service/addResourceCategory:
+    summary: api to add a resource category to service
+    post:
+      tags:
+        - "service-apis"
+      parameters:
+          - in: header
+            name: security
+            schema:
+              type: string
+            required: true
+          - in: header
+            name: arc-account-id
+            schema:
+              type: string
+            required: true
+          - in: query
+            name: serviceName
+            schema:
+              type: string
+            required: true  
+      requestBody:
+          content:
+            'application/json':
+              schema:
+                $ref:  '#/components/schemas/ResourceCategory'
+      responses:
+        '200':
+          description: ok
+        '403':
+          description: access denied
+        '400':
+          description: bad request
+        
 
 
 components:
@@ -82,28 +294,35 @@ components:
         properties:
           id: 
             type: string
+            description: policy document id
           name:
             type: string
+            description: name of the policy
           description:
             type: string
+            description: description of the policy
           accountId:
             type: string
+            description: account id to which policy belongs to.
           policyType:
             type: string
             enum: ["identity","resource"]
+            description: tells whether this policy is associated with identity or service or resource. The following info is for policyType identity only
           version:
             type: object
             properties:
-              version:
-                type: string
               versionNo: 
                 type: string
+                description: it is a serially incrementing number which tells the current version of the document.
               updatedBy:
                 type: string
+                description: id of the user who updated the document.
               updatedAt:
                 type: string
+                description: tells time at which document got updated
           rules: 
             type: array
+            description: List of rules that defines which resource the user has access to or not. Each rule contains the following fields.
             items: 
               $ref: '#/components/schemas/SimpleRule'
       SimpleRule:
@@ -111,20 +330,86 @@ components:
            properties:
              ruleType: 
                 type: string
-                enum: ["SIMPLE",INHERIT]
+                enum: ["SIMPLE","INHERIT"]
+                description: rule type is used to make rule object flexible in future.
+                  The Only allowed rule type for now is SIMPLE.we can allow other classes of rule type. For eaxmple INHERITOR ruleType to allow user to inherit rules from another policy document.
              resourceCategory:
                 type: string
+                description: defines the category of resource. For example in case of database. One of the resourceCategory will be tables.
              effect:
                 type: string
+                description: two values are allowed for effect. Viz allow and deny.
+                  Allow means the following rule give the permission to access the resource deny means following rules blocks the permission to the resource
              actions:
                 type: string
+                description: actions are a list of operations that are allowed /denied for the identity.
+                  Example - in case of database the operations can be INSERT,UPDATE,READ,DELETE
              resources:
                 type: array
                 items:
                     type: string
+                description: List of resource identifier.
+                 ResourceIdentifier should uniquely identify the resource within  the service.
+                 Resource Identifier syntax -  servicePrefix::topLevelResourcePrefix:id/nexrLevelResourcePrefix:id/ …
+                 Example - if we want to deny the access for table by name product inside schema organization then the ResourceIdentifier will look like
+                 deb:001::sch:organization::tab:product
+                 Here deb stands for database. 001 is database id.
+                 sch is the prefix for schema. Organization is the schema name.
+                 tab is the prefix for resource table and product is the table name
              conditions:
-              type: object    
-
+              type: object
+              description: This is an advanced feature that lets us control denying access to resources at a certain time window. Or restricting access from limited set of iP etc. the design for this option is WIP
+      Service:
+        type: object
+        description: The Service collections store a list of services that this account supports.
+        properties:
+          serviceName:
+            type: string
+            description: is used to identify the service.
+          ServicePrefix:
+            type: string
+            description: is used to construct resourceIdentifier*.
+              All the resources under service will/should be prefixed  with service prefix.
+              For product database service. The service prefix would be "prdb".
+          accountId:
+            type: string
+            description: Id of the account to which the service belongs to.
+          resourceCategory:
+            type: array
+            description: This field is used to store the list of resource types in a given service.
+              In the case of a traditional database resource type will be table,schema,view etc.
+            items: 
+              $ref: '#/components/schemas/ResourceCategory'
+      ResourceCategory:
+        type: object
+        properties:
+          resourceCategoryName:
+            type: string
+            description: name of resource category
+          resourcePrefix:
+            type: string
+            description: Is used to construct resourceIdentifier*. This must be a unique identifier to identify the resources within the service.
+              For example, in the case of a traditional database.
+              Prefix for table will be tab.
+              Prefix for schema will be sch
+              Prefix for view will be vw
+          parentResourceCatagoryNames:
+            type: array
+            description: List of names of parent resourceCategory. in case of database.
+              For resource type table. schema resource type will be it's parent
+            items:
+              type: string
+          inheritsParentPermissions:
+            type: boolean
+            description: does this resource category inherit permission from its parent resource.
+              Lets say in case of file system. file is the child resource and directory is the parent resource.
+              If permission of directory is read and write and if this permission needs to inherited autometically to child files.
+              then this option should be set to true.
+          actions:
+              type: array
+              description:  List of operations that are allowed for a resourceCategory.
+              items:
+                type: string
           
 
 
