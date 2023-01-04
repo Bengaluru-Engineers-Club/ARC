@@ -222,7 +222,7 @@ paths:
 
   /core/service/createOrReplaceService:
     summary: api to create or replace a service definition  
-    put: 
+    post:
       tags:
         - "service-apis"
       parameters:
@@ -284,7 +284,72 @@ paths:
           description: access denied
         '400':
           description: bad request
-        
+
+  /core/identityPolicyMapping/getMapping:
+    summary: api to get the identity to policy mapping information        
+    get:
+      tags:
+        - "identity-policy mapping"
+      parameters:
+        - in: header
+          name: security
+          schema:
+            type: string
+          required: true
+        - in: header
+          name: arc-account-id
+          schema:
+            type: string
+          required: true    
+        - in: query
+          name: identityId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: ok
+          content:
+            'application/json':
+              schema:
+                $ref:  '#/components/schemas/IdentityPolicyMapping'
+        '403':
+          description: access denied
+        '400':
+          description: bad request
+
+
+  /core/identityPolicyMapping/createOrReplaceMapping:
+    summary: api to add or update identity and policy mapping information
+    post:
+      tags:
+        - "identity-policy mapping"
+      parameters:
+        - in: header
+          name: security
+          schema:
+            type: string
+          required: true
+        - in: header
+          name: arc-account-id
+          schema:
+            type: string
+          required: true  
+      requestBody:
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/IdentityPolicyMapping'
+      responses:
+        '200':
+          description: ok
+        '201':
+          description: new mapping created
+        '403':
+          description: access denied
+        '400':
+          description: bad request
+
 
 
 components:
@@ -309,17 +374,9 @@ components:
             enum: ["identity","resource"]
             description: tells whether this policy is associated with identity or service or resource. The following info is for policyType identity only
           version:
+            description: version of the policy document
             type: object
-            properties:
-              versionNo: 
-                type: string
-                description: it is a serially incrementing number which tells the current version of the document.
-              updatedBy:
-                type: string
-                description: id of the user who updated the document.
-              updatedAt:
-                type: string
-                description: tells time at which document got updated
+            $ref: '#/components/schemas/VersionTrackingObject' 
           rules: 
             type: array
             description: List of rules that defines which resource the user has access to or not. Each rule contains the following fields.
@@ -410,10 +467,52 @@ components:
               description:  List of operations that are allowed for a resourceCategory.
               items:
                 type: string
-          
+      IdentityPolicyMapping:
+        type: object
+        properties:
+          id:
+            description: user are group id
+            type: string
+          description:
+            description: description about the role or user.
+            type: string
+          iDPSystemInfo:
+            description: information about the system from which the id is retrieved
+            type: object
+            $ref: '#/components/schemas/IDPSystemInfo'
+          idType:
+            description: whether the idenity is a user identity or group identity
+            type: string
+            enum: ["user","group"]
+          mappedPolicyIds:
+            description: list of policy document attached to the user.
+            type: string
+          accountId:
+            description: account id to which the user belongs to.
+            type: string
 
-
-
+      IDPSystemInfo:
+            description: information about the system from which the id is retrieved
+            type: object
+            properties:
+              iDPSystemType:
+                description: type of identity provider -   (LDAP,AD,OpenIdConnect,Google IDP)
+                type: string
+              iDPName:
+                description: name of the idp provider
+                type: string
+      VersionTrackingObject:
+            type: object
+            properties:
+              versionNo: 
+                type: string
+                description: it is a serially incrementing number which tells the current version of the document.
+              updatedBy:
+                type: string
+                description: id of the user who updated the document.
+              updatedAt:
+                type: string
+                description: tells time at which document got updated
 
 
   
